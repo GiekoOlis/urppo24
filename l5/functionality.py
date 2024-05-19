@@ -30,7 +30,7 @@ palette_white = {
 }
 
 
-def read_mrk_json(path_to_markdown, markdown, encoding = "utf-8"):
+def read_mrk_json(path_to_markdown, markdown, encoding="utf-8"):
     """
     Read *.mrk.json file containing annotations for dicom file
 
@@ -46,8 +46,8 @@ def read_mrk_json(path_to_markdown, markdown, encoding = "utf-8"):
     Returns
     -------
     dict
-        contains spine element name, 
-        number of points in annotation, 
+        contains spine element name,
+        number of points in annotation,
         list of pairs of coordinates (x, y)
     """
 
@@ -74,7 +74,8 @@ def read_mrk_json(path_to_markdown, markdown, encoding = "utf-8"):
 
 def read_all_markdowns(path_to_labels):
     """
-    Read all the annotations for one case (C2-C7, Th1-Th12, L1-L5, S1, FH1, FH2)
+    Read all the annotations for one case (C2-C7, Th1-Th12,
+    L1-L5, S1, FH1, FH2)
 
     Parameters
     ----------
@@ -84,14 +85,14 @@ def read_all_markdowns(path_to_labels):
     Returns
     -------
     list
-        list of dictionaries    
+        list of dictionaries
     """
 
     filenames = os.listdir(path_to_labels)
     all_point_sets = []
     for file in filenames:
         all_point_sets.append(read_mrk_json(path_to_labels, file))
-    
+
     return all_point_sets
 
 
@@ -104,7 +105,7 @@ def define_circle(p1, p2, p3):
     bc = (p1[0] * p1[0] + p1[1] * p1[1] - temp) / 2
     cd = (temp - p3[0] * p3[0] - p3[1] * p3[1]) / 2
     det = (p1[0] - p2[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p2[1])
-    
+
     if abs(det) < 1.0e-6:
         return None, np.inf
 
@@ -114,7 +115,6 @@ def define_circle(p1, p2, p3):
 
     radius = np.sqrt((cx - p1[0])**2 + (cy - p1[1])**2)
     return (cx, cy), radius
-
 
 
 def get_LUT_value(data, window, level):
@@ -135,14 +135,16 @@ def get_LUT_value(data, window, level):
     numpy array
         processed dicom pixel array
     """
-    return np.piecewise(data,
-                        [data <= (level - 0.5 - (window - 1) / 2),
-                         data > (level - 0.5 + (window - 1) / 2)],
-                        [0, 255, lambda data: ((data - (level - 0.5)) /
-                         (window - 1) + 0.5) * (255 - 0)])
+    return np.piecewise(
+        data,
+        [data <= (level - 0.5 - (window - 1) / 2),
+         data > (level - 0.5 + (window - 1) / 2)],
+        [0, 255, lambda data: ((data - (level - 0.5)) /
+                               (window - 1) + 0.5) * (255 - 0)])
 
 
-# TODO: add window and level parameters as input, if they r not None then use input, if they r None try to use from dicom
+# TODO: add window and level parameters as input, if they r not None
+# then use input, if they r None try to use from dicom
 def get_PIL_image(dataset):
     """Get Image object from Python Imaging Library(PIL)"""
     if ('PixelData' not in dataset):
@@ -187,15 +189,19 @@ def get_PIL_image(dataset):
     return im
 
 
-def create_filled_mask(path_to_orig_image, all_point_sets, path_to_output, colored = False, spacing = None, draw_FH=True):
-    output = os.path.join(path_to_output, path_to_orig_image.split("\\")[-1].split(".")[0] + ".png")
+def create_filled_mask(
+        path_to_orig_image, all_point_sets, path_to_output,
+        colored=False, spacing=None, draw_FH=True):
+    output = os.path.join(
+        path_to_output,
+        path_to_orig_image.split("\\")[-1].split(".")[0]+".png")
     dicom = pydicom.dcmread(path_to_orig_image)
     input = get_PIL_image(dicom)
-    if spacing == None:
+    if spacing is None:
         spacing = dicom.ImagerPixelSpacing
     width, height = input.size
 
-    if colored == False:
+    if colored is False:
         mask = Image.new('1', (width, height), 'black')
         palette = palette_white
     else:
@@ -205,17 +211,26 @@ def create_filled_mask(path_to_orig_image, all_point_sets, path_to_output, color
     for k, markdown in enumerate(all_point_sets):
         if "FH" in markdown['name']:
             if draw_FH:
-                coordinates = [(float(i['position'][0]), float(i['position'][1])) for i in markdown['controlPoints']]
-                c, r = define_circle(coordinates[0], coordinates[1], coordinates[2])
+                coordinates = [(float(i['position'][0]),
+                                float(i['position'][1]))
+                               for i in markdown['controlPoints']]
+                c, r = define_circle(coordinates[0], coordinates[1],
+                                     coordinates[2])
                 c, r = (c[0] / spacing[0], c[1] / spacing[1]), r / spacing[0]
                 draw.point((c[0], c[1]), fill=palette["F"])
-                draw.ellipse([(c[0]-r, c[1]-r), (c[0]+r, c[1]+r)],  fill=palette["F"], outline = 'white', width=1)
+                draw.ellipse([(c[0]-r, c[1]-r), (c[0]+r, c[1]+r)],
+                             fill=palette["F"], outline='white', width=1)
         else:
-            coordinates = [(float(i['position'][0] / spacing[0]), float(i['position'][1]) / spacing[1]) for i in markdown['controlPoints']]
-            draw.polygon(tuple(coordinates), fill=palette[markdown['name'][0]], outline = 'white', width=1)
+            coordinates = [(float(i['position'][0] / spacing[0]),
+                            float(i['position'][1]) / spacing[1])
+            for i in markdown['controlPoints']]
+            draw.polygon(tuple(coordinates),
+                         fill=palette[markdown['name'][0]],
+                         outline='white', width=1)
             print(coordinates)
     mask.save(output)
-    
-    
-labels = read_all_markdowns("/labels/001/001_FD")    
-create_filled_mask("/images/001/001_FD.dcm",labels, "/labels", colored=True, spacing=None, draw_FH=False)
+
+
+labels = read_all_markdowns("/labels/001/001_FD")
+create_filled_mask("/images/001/001_FD.dcm", labels, "/labels",
+                   colored=True, spacing=None, draw_FH=False)

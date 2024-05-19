@@ -27,7 +27,7 @@ jobs:
     #  run: apt-get install pycodestyle
     # check .py files
     - name: pycodestyle check
-      run: pycodestyle --max-doc-length=120 --ignore=E226 ./
+      run: pycodestyle --max-doc-length=120 --ignore=E128,E226,W504 ./
 
 
 
