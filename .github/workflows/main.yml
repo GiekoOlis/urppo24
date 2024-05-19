@@ -23,8 +23,8 @@ jobs:
     - name: install pycodestyle lib
       run: pip install pycodestyle
     # install pycodestyle utilite
-    - name: install pycodestyle linux
-      run: apt-get install pycodestyle
+    #- name: install pycodestyle linux
+    #  run: apt-get install pycodestyle
     # check .py files
     - name: pycodestyle check
       run: pycodestyle --max-doc-length=120 --ignore=E226 ./
